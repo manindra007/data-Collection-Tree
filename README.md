@@ -24,15 +24,16 @@ Run On Postman.
                 }
             ],
             "metrics": [{
-                    "key": "webreq",
-                    "val": 50
-                },
-                {
-                    "key": "timespent",
-                    "val": 40
-                }
-            ]
-        }
+                        "key": "webreq",
+                        "val": 50
+                    },
+                    {
+                        "key": "timespent",
+                        "val": 40
+                    }
+                ]
+            }
+        d. click on Send
 
     To Get Data
         a. http://localhost:8081/v1/query
@@ -43,6 +44,7 @@ Run On Postman.
                         "val": "IN"
                 }]
             }
+        d. click on send
 
 ** all names are case sensitive
 
