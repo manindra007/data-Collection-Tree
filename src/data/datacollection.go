@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type WebCountry struct {
@@ -35,19 +34,42 @@ type InputKeyInt struct {
 	Val int    `json:"val"`
 }
 
-type InputData struct {
-	// Data int `json:"data"`
+type InputSetData struct {
 	Dim     []InputKeyString `json:"dim"`
 	Metrics []InputKeyInt    `json:"metrics"`
 }
 
-func SetData(v []byte) {
-	// fmt.Println(string(v))
-	var ID InputData
+type InputGetData struct {
+	Dim []InputKeyString `json:"dim"`
+}
+
+type OutPutResponse struct {
+	Status string     `json:"Res"`
+	Output OutputData `json:"Output"`
+}
+
+type OutputData struct {
+	Dim     []OutputKeyString `json:"dim"`
+	Metrics []OutputkeyInt    `json:"metrics"`
+}
+
+type OutputkeyInt struct {
+	Key string `json:"key"`
+	Val int    `json:"val"`
+}
+
+type OutputKeyString struct {
+	Key string `json:"key"`
+	Val string `json:"val"`
+}
+
+func SetData(v []byte) *OutPutResponse {
+	var ID InputSetData
 	var err error
 	if err = json.Unmarshal(v, &ID); err != nil {
-		fmt.Println("error occured", err.Error())
-		return
+		return &OutPutResponse{
+			Status: "404 data not found",
+		}
 	}
 
 	var country, devtype string
@@ -59,7 +81,9 @@ func SetData(v []byte) {
 		country = ID.Dim[1].Val
 		devtype = ID.Dim[0].Val
 	} else {
-		fmt.Println("error")
+		return &OutPutResponse{
+			Status: "404 data not found",
+		}
 	}
 	if ID.Metrics[0].Key == "webreq" && ID.Metrics[1].Key == "timespent" {
 		webr = ID.Metrics[0].Val
@@ -68,7 +92,9 @@ func SetData(v []byte) {
 		webr = ID.Metrics[1].Val
 		times = ID.Metrics[0].Val
 	} else {
-		fmt.Println("error")
+		return &OutPutResponse{
+			Status: "404 data not found",
+		}
 	}
 
 	WebUsage.WebReqeust = WebUsage.WebReqeust + webr
@@ -86,12 +112,9 @@ func SetData(v []byte) {
 	val.TimeSpent = times + val.TimeSpent
 	if val.DeviceType == nil {
 		val.DeviceType = make(map[string]*WebDevice)
-		// WebUsage.CountryType[country] = val
 	}
-	// } else {
-	// }
-
 	WebUsage.CountryType[country] = val
+
 	if dev, ok := WebUsage.CountryType[country].DeviceType[devtype]; !ok {
 		WebUsage.CountryType[country].DeviceType[devtype] = &WebDevice{
 			Device:     devtype,
@@ -104,13 +127,45 @@ func SetData(v []byte) {
 			TimeSpent:  dev.TimeSpent + times,
 		}
 	}
-	// fmt.Println("h3")
-	// fmt.Println(WebUsage)
-	// fmt.Println(WebUsage.CountryType[country])
-	// fmt.Println(WebUsage.CountryType[country].DeviceType[devtype])
+	return &OutPutResponse{
+		Status: "200 OK",
+	}
 }
 
-func FetchData(v []byte) {
-	fmt.Println(WebUsage)
+func FetchData(v []byte) *OutPutResponse {
+	var ID InputGetData
+	var err error
+	if err = json.Unmarshal(v, &ID); err != nil {
+		return &OutPutResponse{
+			Status: "404 data not found",
+		}
+	}
+
+	var res *OutPutResponse
+	for _, val := range ID.Dim {
+		var country string
+		if val.Key == "country" {
+			country = ID.Dim[0].Val
+		} else {
+			return &OutPutResponse{
+				Status: "404 data not found",
+			}
+		}
+		var r OutputData
+		r.Dim = make([]OutputKeyString, 0)
+		d := OutputKeyString{Key: "country", Val: country}
+		r.Dim = append(r.Dim, d)
+		r.Metrics = make([]OutputkeyInt, 0)
+		m1 := OutputkeyInt{Key: "webreq", Val: WebUsage.CountryType[country].WebReqeust}
+		m2 := OutputkeyInt{Key: "timespent", Val: WebUsage.CountryType[country].TimeSpent}
+		r.Metrics = append(r.Metrics, m1)
+		r.Metrics = append(r.Metrics, m2)
+
+		res = &OutPutResponse{
+			Status: "200 OK",
+			Output: OutputData{Dim: r.Dim, Metrics: r.Metrics},
+		}
+	}
+	return res
 
 }
